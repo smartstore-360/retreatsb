@@ -1,4 +1,4 @@
-const API = 'https://script.google.com/macros/s/AKfycbwzrvuavRYUFKRzL7PEoMYurSIinBNQ_e9He4YBWyKcWUSaxOBL7ioJITtUBhqMzAH-/exec';   // Apps Script deployment URL (ends in /exec)
+const API = 'PASTE_YOUR_WEB_APP_URL_HERE';   // Apps Script deployment URL (ends in /exec)
 const CAMPS = ['Adult', 'Youth', 'Campus', 'Children'];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -15,6 +15,56 @@ const db = new Promise((res, rej) => {
 const tx = async (s, m, f) => { const d = await db; return new Promise((res, rej) => { const t = d.transaction(s, m), o = f(t.objectStore(s)); t.oncomplete = () => res(o && o.result); t.onerror = () => rej(t.error); }); };
 const kv = { get: k => tx('kv', 'readonly', s => s.get(k)), set: (k, v) => tx('kv', 'readwrite', s => s.put(v, k)), clear: () => tx('kv', 'readwrite', s => s.clear()) };
 const q = { all: () => tx('q', 'readonly', s => s.getAll()), put: r => tx('q', 'readwrite', s => s.put(r)), del: k => tx('q', 'readwrite', s => s.delete(k)) };
+
+
+// ---------- charts (dependency-free SVG, works offline) ----------
+const COL = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#38bdf8'], NONE = '<p class="empty">No data yet</p>';
+const legend = items => `<div class="legend">${items.map((n, i) => `<span><i class="sw" style="background:${COL[i % 5]}"></i>${esc(n)}</span>`).join('')}</div>`;
+function donut(items) {
+  const t = items.reduce((a, i) => a + i[1], 0); if (!t) return NONE;
+  let a = -Math.PI / 2; const R = 80, r = 50, p = (g, d) => [100 + d * Math.cos(g), 100 + d * Math.sin(g)];
+  const arcs = items.map(([l, v], i) => {
+    if (!v) return ''; const f = v / t, b = a + f * 2 * Math.PI - (f === 1 ? .0001 : 0);
+    const [x1, y1] = p(a, R), [x2, y2] = p(b, R), [x3, y3] = p(b, r), [x4, y4] = p(a, r), big = f > .5 ? 1 : 0; a += f * 2 * Math.PI;
+    return `<path d="M${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}L${x3} ${y3}A${r} ${r} 0 ${big} 0 ${x4} ${y4}Z" fill="${COL[i % 5]}"><title>${esc(l)}: ${v}</title></path>`;
+  }).join('');
+  return `<div class="donut"><svg viewBox="0 0 200 200">${arcs}<text x="100" y="102" text-anchor="middle" fill="#fff" font-size="26" font-weight="700">${t}</text><text x="100" y="120" text-anchor="middle" fill="#94a3b8" font-size="11">Total</text></svg><ul>${items.map(([l, v], i) => `<li><i class="sw" style="background:${COL[i % 5]}"></i>${esc(l)}<b>${v}</b></li>`).join('')}</ul></div>`;
+}
+function bars(labels, series, stacked) {
+  if (!labels.length) return NONE;
+  const n = labels.length, W = Math.max(320, n * (stacked ? 44 : 26 * series.length + 14) + 40), Ht = 230, pl = 32, pb = 56, pt = 10, ph = Ht - pt - pb;
+  const max = Math.max(1, ...labels.map((_, i) => stacked ? series.reduce((a, s) => a + s.data[i], 0) : Math.max(...series.map(s => s.data[i]))));
+  const y = v => pt + ph - v / max * ph, bw = (W - pl) / n; let g = '';
+  for (let k = 0; k <= 4; k++) { const v = Math.round(max * k / 4), yy = y(v); g += `<line x1="${pl}" x2="${W}" y1="${yy}" y2="${yy}" stroke="#334155"/><text x="${pl - 4}" y="${yy + 3}" text-anchor="end" fill="#94a3b8" font-size="9">${v}</text>`; }
+  labels.forEach((l, i) => {
+    const x0 = pl + i * bw + bw * .12, w = bw * .76; let acc = 0;
+    series.forEach((s, j) => {
+      const v = s.data[i], t = `<title>${esc(s.name)}: ${v}</title>`;
+      if (stacked) { const y1 = y(acc + v); g += `<rect x="${x0}" y="${y1}" width="${w}" height="${y(acc) - y1}" fill="${COL[j % 5]}">${t}</rect>`; acc += v; }
+      else { const ww = w / series.length; g += `<rect x="${x0 + j * ww}" y="${y(v)}" width="${ww - 2}" height="${pt + ph - y(v)}" fill="${COL[j % 5]}" rx="2">${t}</rect>`; }
+    });
+    const cx = x0 + w / 2; g += `<text x="${cx}" y="${pt + ph + 14}" text-anchor="end" fill="#cbd5e1" font-size="10" transform="rotate(-35 ${cx} ${pt + ph + 14})">${esc(String(l).length > 12 ? String(l).slice(0, 11) + '…' : l)}</text>`;
+  });
+  return `<div class="tw"><svg viewBox="0 0 ${W} ${Ht}" style="min-width:${W}px;width:100%">${g}</svg></div>${legend(series.map(s => s.name))}`;
+}
+const hbars = items => { if (!items.length) return NONE; const m = Math.max(1, ...items.map(i => i[1])); return `<div class="hb">${items.map(([l, v]) => `<div><span title="${esc(l)}">${esc(l)}</span><div class="bar"><i style="width:${v / m * 100}%"></i></div><b>${v}</b></div>`).join('')}</div>`; };
+
+// ---------- event settings (from the server, cached for offline) ----------
+let cfg = {};
+function applyCfg(c) {
+  cfg = c || {};
+  document.querySelectorAll('[data-c]').forEach(e => { const v = cfg[e.dataset.c] || ''; e.textContent = v; e.hidden = !v && e.dataset.c !== 'org'; });
+  document.title = (cfg.org || 'DCLM') + ' Registration System';
+}
+async function fetchCfg() { try { const j = await api('config'); if (j.success) { localStorage.setItem('dclm_cfg', JSON.stringify(j.config)); applyCfg(j.config); } } catch (e) { } }
+function fillCfgForm() { $('cOrg').value = cfg.org || ''; $('cEvent').value = cfg.event || ''; $('cTheme').value = cfg.theme || ''; $('cDates').value = cfg.dates || ''; }
+$('cfgForm').onsubmit = async e => {
+  e.preventDefault();
+  const c = { org: $('cOrg').value.trim() || 'DCLM', event: $('cEvent').value.trim(), theme: $('cTheme').value.trim(), dates: $('cDates').value.trim() };
+  try { const j = await api('saveConfig', c); flash('setMsg', j.message, j.success ? 'success' : 'error'); if (j.success) { localStorage.setItem('dclm_cfg', JSON.stringify(c)); applyCfg(c); } }
+  catch (err) { flash('setMsg', 'Saving settings needs an internet connection.', 'error'); }
+};
+applyCfg(JSON.parse(localStorage.getItem('dclm_cfg') || '{}')); fetchCfg();
 
 // ---------- API ----------
 async function api(action, data = {}) {
@@ -78,11 +128,11 @@ function enter() {
   showTab('dashboard'); loadBoot(); badge(); sync();
 }
 function showTab(t) {
-  if (S?.role !== 'admin' && ['districts', 'analytics', 'headcount'].includes(t)) return;
+  if (S?.role !== 'admin' && ['districts', 'analytics', 'headcount', 'settings'].includes(t)) return;
   document.querySelectorAll('.tab').forEach(e => e.classList.toggle('on', e.dataset.tab === t));
   document.querySelectorAll('.pane').forEach(e => e.classList.toggle('on', e.id === t));
   $('side').classList.remove('open');
-  ({ dashboard: dash, analytics: analytics, headcount: hcLoad, districts: renderDistricts })[t]?.();
+  ({ dashboard: dash, analytics: analytics, headcount: hcLoad, districts: renderDistricts, settings: fillCfgForm })[t]?.();
 }
 
 // ---------- rendering ----------
@@ -94,6 +144,7 @@ async function dash() {
     const j = await load('stats', 'stats'), pend = (await q.all()).filter(i => i.type === 'reg').length;
     $('tTotal').textContent = j.total + pend; $('tToday').textContent = j.today; $('tNew').textContent = j.newComers; $('tMem').textContent = j.members;
     $('dashMsg').innerHTML = stale(j);
+    $('chCamp').innerHTML = donut(CAMPS.map(c => [c, j.camps[c] || 0])); $('chGender').innerHTML = donut([['Male', j.gender.Male], ['Female', j.gender.Female]]);
     $('recent').innerHTML = j.recent.length ? j.recent.map(r => `<div class="item"><b>${esc(r.name)}</b><br><small>${esc(r.district)}</small><small>${esc(r.status)}</small><small>${esc(r.time)}</small></div>`).join('') : '<div class="alert">No recent registrations</div>';
   } catch (e) { flash('dashMsg', 'No data yet. Connect once to load.', 'warning'); }
 }
@@ -122,8 +173,14 @@ async function analytics() {
     let M = 0, F = 0;
     $('anCamp').innerHTML = stale(j) + tbl(['Camp', 'Male', 'Female', 'Total'], CAMPS.map(c => { const [m, f] = j.camps[c] || [0, 0]; M += m; F += f; return [c, m, f, m + f]; }), ['Grand Total', M, F, M + F]);
     const hd = CAMPS.flatMap(c => [c + ' M', c + ' F', c + ' T']).concat('Total');
-    $('anDaily').innerHTML = tbl(['Date', ...hd], j.daily.map(d => [d.k, ...campCells(d.c)]));
-    $('anDist').innerHTML = tbl(['District', ...hd], j.districts.map(d => [d.k, ...campCells(d.c)]).sort((a, b) => b.at(-1) - a.at(-1)));
+    const foot = rows => rows.length ? ['Grand Total', ...rows[0].slice(1).map((_, i) => rows.reduce((a, r) => a + r[i + 1], 0))] : null;
+    const dr = j.daily.map(d => [d.k, ...campCells(d.c)]), ds = j.districts.map(d => [d.k, ...campCells(d.c)]).sort((a, b) => b.at(-1) - a.at(-1));
+    $('anDaily').innerHTML = tbl(['Date', ...hd], dr, foot(dr));
+    $('anDist').innerHTML = tbl(['District', ...hd], ds, foot(ds));
+    const sum = a => (a || [0, 0])[0] + (a || [0, 0])[1];
+    $('chDaily').innerHTML = bars(j.daily.map(d => d.k), CAMPS.map(k => ({ name: k, data: j.daily.map(d => sum(d.c[k])) })), true);
+    $('chCampGender').innerHTML = bars(CAMPS, [{ name: 'Male', data: CAMPS.map(c => (j.camps[c] || [0, 0])[0]) }, { name: 'Female', data: CAMPS.map(c => (j.camps[c] || [0, 0])[1]) }], false);
+    $('chDist').innerHTML = hbars(ds.slice(0, 10).map(r => [r[0], r.at(-1)]));
   } catch (e) { flash('hcMsg', 'Analytics unavailable offline until loaded once.', 'warning'); }
 }
 const hcFilters = () => ({ date: $('fDate').value, camp: $('fCamp').value, message: $('fMsg').value, q: $('fQ').value.trim(), page: hcPage, size: 10 });
