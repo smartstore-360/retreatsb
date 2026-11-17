@@ -1,4 +1,4 @@
-const API = 'https://script.google.com/macros/s/AKfycbwzrvuavRYUFKRzL7PEoMYurSIinBNQ_e9He4YBWyKcWUSaxOBL7ioJITtUBhqMzAH-/exec';   // Apps Script deployment URL (ends in /exec)
+const API = 'PASTE_YOUR_WEB_APP_URL_HERE';   // Apps Script deployment URL (ends in /exec)
 const CAMPS = ['Adult', 'Youth', 'Campus', 'Children'];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -230,7 +230,7 @@ document.querySelectorAll('.rb').forEach(b => b.onclick = () => { document.query
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
 $('loginForm').onsubmit = e => { e.preventDefault(); doLogin(); };
 $('eye').onclick = () => { const p = $('pw'); p.type = p.type === 'password' ? 'text' : 'password'; $('eye').style.opacity = p.type === 'text' ? 1 : .6; };
-$('logout').onclick = logout; $('menu').onclick = () => $('side').classList.toggle('open');
+$('scrim').onclick = () => $('side').classList.remove('open'); $('logout').onclick = logout; $('menu').onclick = () => $('side').classList.toggle('open');
 $('status').onchange = () => $('invBox').hidden = $('status').value !== 'New Comer';
 $('district').onchange = fillLocations;
 $('regForm').onsubmit = submitReg; $('hcForm').onsubmit = submitHc;
