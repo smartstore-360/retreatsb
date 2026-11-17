@@ -1,4 +1,4 @@
-const API = 'https://script.google.com/macros/s/AKfycbwzrvuavRYUFKRzL7PEoMYurSIinBNQ_e9He4YBWyKcWUSaxOBL7ioJITtUBhqMzAH-/exec';   // Apps Script deployment URL (ends in /exec)
+const API = 'PASTE_YOUR_WEB_APP_URL_HERE';   // Apps Script deployment URL (ends in /exec)
 const CAMPS = ['Adult', 'Youth', 'Campus', 'Children'];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

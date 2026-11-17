@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f172a"><link rel="manifest" href="manifest.json">
+<title>DCLM Registration System</title><link rel="stylesheet" href="style.css">
+</head><body>
+<div id="auth"><div class="login">
+<div class="brand"><div class="logo">✝</div><h1>DCLM Nalerigu Region</h1><p class="theme">Global December Retreat 2025</p><p class="sub">The Great Redemption Power</p>
+<ul><li>📝 Fast attendee registration</li><li>📶 Works offline, syncs automatically</li><li>📊 Live attendance &amp; altar call reports</li></ul><small>24th – 28th December</small></div>
+<form class="panel" id="loginForm" autocomplete="off"><h2>Welcome back</h2><p class="hint">Sign in to continue</p>
+<div class="seg"><button type="button" class="rb on" data-role="register">Registration Officer</button><button type="button" class="rb" data-role="admin">Administrator</button></div>
+<label>Access password<div class="pwrap"><input type="password" id="pw" placeholder="Enter your password" autocomplete="off"><button type="button" id="eye" aria-label="Show password">👁</button></div></label>
+<div id="authMsg"></div><button class="btn" id="loginBtn" type="submit"><span>Sign in</span></button><small class="foot">Authorized personnel only</small></form></div></div>
+
+<div id="app" hidden>
+<aside id="side"><h2>DCLM Nalerigu Region</h2><p>Global December Retreat, 2025<br>24th–28th December</p>
+<nav><a class="tab on" data-tab="dashboard">📊 Dashboard</a><a class="tab" data-tab="register">📝 Register</a>
+<a class="tab adm" data-tab="districts">🗺️ Districts</a><a class="tab adm" data-tab="analytics">📈 Analytics</a><a class="tab adm" data-tab="headcount">👥 Headcount</a></nav>
+<footer id="roleLbl"></footer></aside>
+<main><header><button id="menu">☰</button><div><b>⛪ Nalerigu Region</b><small>The Great Redemption Power</small></div>
+<span id="sync"></span><button class="btn red" id="logout">Logout</button></header>
+<div id="content">
+<section id="dashboard" class="pane on"><h3>Dashboard Overview</h3><div id="dashMsg"></div>
+<div class="stats"><div><b id="tTotal">0</b>Total</div><div><b id="tToday">0</b>Today</div><div><b id="tNew">0</b>New Comers</div><div><b id="tMem">0</b>Members</div></div>
+<h3>Recent Registrations</h3><div id="recent"></div></section>
+
+<section id="register" class="pane"><h3>New Registration</h3><div id="regMsg"></div>
+<form id="regForm"><label>Date *<input type="date" id="date" required></label>
+<label>Full Name *<input id="fullName" required minlength="2" maxlength="100"></label>
+<div class="row"><label>Gender *<select id="gender" required><option value="">Select</option><option>Male</option><option>Female</option></select></label>
+<label>Age Group *<select id="ageGroup" required><option value="">Select</option><option>3–5</option><option>6–9</option><option>10–12</option><option>13–19</option><option>20–29</option><option>30–39</option><option>40–49</option><option>50–59</option><option>60+</option></select></label></div>
+<div class="row"><label>Camp *<select id="camp" required><option value="">Select</option><option>Adult</option><option>Youth</option><option>Campus</option><option>Children</option></select></label>
+<label>Status *<select id="status" required><option value="">Select</option><option>Member</option><option>New Comer</option></select></label></div>
+<div class="row"><label>District *<select id="district" required></select></label><label>Location *<select id="location" required disabled></select></label></div>
+<label id="invBox" hidden>Invited By *<input id="invitedBy" maxlength="100"></label>
+<label>Phone <small>(optional)</small><input type="tel" id="phone" maxlength="20"></label>
+<button class="btn" id="regBtn">Register Attendee</button></form></section>
+
+<section id="districts" class="pane"><h3>Districts &amp; Locations</h3><div id="distMsg"></div>
+<form id="locForm" class="row3"><label>District *<input id="newDistrict" required></label><label>Location *<input id="newLocation" required></label><button class="btn">Add</button></form>
+<div id="distList"></div></section>
+
+<section id="analytics" class="pane"><h3>Camp Statistics</h3><div class="tw" id="anCamp"></div>
+<h3>Daily Registration Breakdown</h3><div class="tw" id="anDaily"></div><h3>District Distribution</h3><div class="tw" id="anDist"></div></section>
+
+<section id="headcount" class="pane"><h3>Headcount</h3><div id="hcMsg"></div>
+<form id="msgForm" class="row3"><label>Message Title *<input id="newMessage" required></label><label>Speaker<input id="speaker"></label><button class="btn">Add Message</button></form>
+<form id="hcForm"><div class="row3"><label>Date *<input type="date" id="hDate" required></label>
+<label>Camp *<select id="hCamp" required><option value="">Select</option><option>Adult</option><option>Youth</option><option>Campus</option><option>Children</option></select></label>
+<label>Message *<select id="hMsg" required></select></label></div>
+<div class="row3"><label>Male<input type="number" min="0" id="hM" value="0"></label><label>Female<input type="number" min="0" id="hF" value="0"></label><label>Total<input id="hT" value="0" readonly></label></div>
+<div class="row3"><label>Altar Call Male<input type="number" min="0" id="aM" value="0"></label><label>Altar Call Female<input type="number" min="0" id="aF" value="0"></label><label>Altar Total<input id="aT" value="0" readonly></label></div>
+<label>Notes<textarea id="hNotes" rows="2"></textarea></label><button class="btn">Record Headcount</button></form>
+<h3>History</h3><div class="filters"><input type="date" id="fDate"><select id="fCamp"><option value="">All Camps</option><option>Adult</option><option>Youth</option><option>Campus</option><option>Children</option></select><select id="fMsg"></select><input id="fQ" placeholder="Search…"><button class="btn" id="fClear">Clear</button></div>
+<div class="tw" id="hcTable"></div><div class="pager"><button class="btn" id="prev">Prev</button><span id="pg"></span><button class="btn" id="next">Next</button></div>
+<div class="stats" id="hcStats"></div><h3>By Camp</h3><div class="tw" id="hcCamps"></div><h3>By Message</h3><div class="tw" id="hcMsgs"></div></section>
+</div></main></div>
+<script src="app.js"></script></body></html>
