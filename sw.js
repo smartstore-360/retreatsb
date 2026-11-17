@@ -1,4 +1,4 @@
-const V = 'dclm-v4', F = ['./', 'index.html', 'app.js', 'style.css', 'manifest.json', 'icon.svg'];
+const V = 'dclm-v5', F = ['./', 'index.html', 'app.js', 'style.css', 'manifest.json', 'icon.svg'];
 self.addEventListener('install', e => e.waitUntil(caches.open(V).then(c => c.addAll(F)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== V).map(x => caches.delete(x)))).then(() => clients.claim())));
 // Shell: stale-while-revalidate. API calls (cross-origin POST) are never intercepted.

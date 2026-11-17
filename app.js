@@ -1,4 +1,4 @@
-const API = 'https://script.google.com/macros/s/AKfycbwzrvuavRYUFKRzL7PEoMYurSIinBNQ_e9He4YBWyKcWUSaxOBL7ioJITtUBhqMzAH-/exec';   // Apps Script deployment URL (ends in /exec)
+const API = 'PASTE_YOUR_WEB_APP_URL_HERE';   // Apps Script deployment URL (ends in /exec)
 const CAMPS = ['Adult', 'Youth', 'Campus', 'Children'];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -112,7 +112,14 @@ async function doLogin() {
     const j = await api('login', { role, password: pw });
     if (!j.success) return flash('authMsg', j.message, 'error');
     S = { token: j.token, role: j.role, ts: Date.now() }; localStorage.setItem('dclm_s', JSON.stringify(S)); enter();
-  } catch (e) { flash('authMsg', 'Network error. First login needs a connection.', 'error'); }
+  } catch (e) {
+    console.error('Login failed:', e);
+    flash('authMsg', API.includes('PASTE_') ? 'The API URL is not set in app.js yet.'
+      : e.name === 'SyntaxError' ? 'The server did not return valid data. In Apps Script, deploy as Web App with access set to "Anyone", and use the /exec URL.'
+      : e.name === 'AbortError' ? 'The server took too long to respond. Try again.'
+      : !navigator.onLine ? 'You are offline. The first login needs a connection.'
+      : 'Could not reach the server. Check the API URL and that the web app is deployed for "Anyone".', 'error');
+  }
   finally { $('loginBtn').disabled = false; $('loginBtn').firstChild.textContent = 'Sign in'; }
 }
 async function logout() {
