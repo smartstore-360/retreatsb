@@ -54,3 +54,4 @@ header div{min-width:0}header b,header small{overflow:hidden;text-overflow:ellip
 #scrim{display:none}
 @media(max-width:767px){aside.open+#scrim{display:block;position:fixed;inset:0;background:#0009;z-index:80}aside{z-index:90;padding-top:env(safe-area-inset-top)}
 header .btn.red{padding:10px 12px;font-size:.85rem}#sync{font-size:.7rem;white-space:nowrap}.filters>*{min-width:100%}.stats b{font-size:1.4rem}h3{font-size:1.05rem}}
+.link{display:block;margin:10px auto 0;background:0;border:0;color:#818cf8;font-size:.85rem;cursor:pointer;padding:8px}

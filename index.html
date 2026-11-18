@@ -10,7 +10,7 @@
 <form class="panel" id="loginForm" autocomplete="off"><h2>Welcome back</h2><p class="hint">Sign in to continue</p>
 <div class="seg"><button type="button" class="rb on" data-role="register">Registration Officer</button><button type="button" class="rb" data-role="admin">Administrator</button></div>
 <label>Access password<div class="pwrap"><input type="password" id="pw" placeholder="Enter your password" autocomplete="off"><button type="button" id="eye" aria-label="Show password">👁</button></div></label>
-<div id="authMsg"></div><button class="btn" id="loginBtn" type="submit"><span>Sign in</span></button><small class="foot">Authorized personnel only</small></form></div></div>
+<div id="authMsg"></div><button class="btn" id="loginBtn" type="submit"><span>Sign in</span></button><small class="foot">Authorized personnel only</small><button type="button" id="srv" class="link">⚙ Server settings</button></form></div></div>
 
 <div id="app" hidden>
 <aside id="side"><h2 data-c="org">DCLM</h2><p><span data-c="event"></span><br><span data-c="dates"></span></p>
@@ -60,4 +60,4 @@
 <form id="cfgForm"><label>Organisation / Region name<input id="cOrg" maxlength="100"></label><label>Event title<input id="cEvent" maxlength="100"></label>
 <label>Theme<input id="cTheme" maxlength="100"></label><label>Dates<input id="cDates" maxlength="100" placeholder="e.g. 24th–28th December"></label><button class="btn">Save Settings</button></form></section>
 </div></main></div>
-<script src="app.js"></script></body></html>
+<script src="config.js"></script><script src="app.js"></script></body></html>

@@ -1,4 +1,5 @@
-const API = 'https://script.google.com/macros/s/AKfycbwzrvuavRYUFKRzL7PEoMYurSIinBNQ_e9He4YBWyKcWUSaxOBL7ioJITtUBhqMzAH-/exec';   // Apps Script deployment URL (ends in /exec)
+const API_KEY = 'dclm_api';   // server URL comes from config.js, or from the 'Server settings' link on the login screen
+let API = (window.DCLM_API || '').trim() || localStorage.getItem(API_KEY) || '';
 const CAMPS = ['Adult', 'Youth', 'Campus', 'Children'];
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -68,6 +69,7 @@ applyCfg(JSON.parse(localStorage.getItem('dclm_cfg') || '{}')); fetchCfg();
 
 // ---------- API ----------
 async function api(action, data = {}) {
+  if (!API) throw new Error('API URL not set');
   const c = new AbortController(), t = setTimeout(() => c.abort(), 30000);
   try {
     const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action, token: S?.token, ...data }), signal: c.signal });
@@ -114,7 +116,7 @@ async function doLogin() {
     S = { token: j.token, role: j.role, ts: Date.now() }; localStorage.setItem('dclm_s', JSON.stringify(S)); enter();
   } catch (e) {
     console.error('Login failed:', e);
-    flash('authMsg', API.includes('PASTE_') ? 'The API URL is not set in app.js yet.'
+    flash('authMsg', !API ? 'Server URL not set. Tap "Server settings" below, or put it in config.js.'
       : e.name === 'SyntaxError' ? 'The server did not return valid data. In Apps Script, deploy as Web App with access set to "Anyone", and use the /exec URL.'
       : e.name === 'AbortError' ? 'The server took too long to respond. Try again.'
       : !navigator.onLine ? 'You are offline. The first login needs a connection.'
@@ -235,6 +237,7 @@ const calc = () => { $('hT').value = (+$('hM').value || 0) + (+$('hF').value || 
 // ---------- wiring ----------
 document.querySelectorAll('.rb').forEach(b => b.onclick = () => { document.querySelectorAll('.rb').forEach(x => x.classList.remove('on')); b.classList.add('on'); role = b.dataset.role; $('pw').focus(); });
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
+$('srv').onclick = () => { const u = prompt('Paste your Apps Script Web App URL (ends in /exec):', API); if (u === null) return; API = u.trim(); localStorage.setItem(API_KEY, API); flash('authMsg', API ? 'Server URL saved. Try logging in.' : 'Server URL cleared.', 'success'); fetchCfg(); };
 $('loginForm').onsubmit = e => { e.preventDefault(); doLogin(); };
 $('eye').onclick = () => { const p = $('pw'); p.type = p.type === 'password' ? 'text' : 'password'; $('eye').style.opacity = p.type === 'text' ? 1 : .6; };
 $('scrim').onclick = () => $('side').classList.remove('open'); $('logout').onclick = logout; $('menu').onclick = () => $('side').classList.toggle('open');
