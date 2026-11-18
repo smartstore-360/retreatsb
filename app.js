@@ -1,4 +1,4 @@
-const API_KEY = 'dclm_api';   // server URL comes from config.js, or from the 'Server settings' link on the login screen
+const API_KEY = 'dclm_api';   // server URL comes from config.js
 let API = (window.DCLM_API || '').trim() || localStorage.getItem(API_KEY) || '';
 const CAMPS = ['Adult', 'Youth', 'Campus', 'Children'];
 const $ = id => document.getElementById(id);
@@ -69,6 +69,7 @@ function applyCfg(c) {
   if (c && c.programs) cfg = c; pickDefault();
   const p = cur(), v = { org: cfg.org, event: p?.name || '', theme: p?.theme || '', dates: fmtRange(p) };
   document.querySelectorAll('[data-c]').forEach(e => { const t = v[e.dataset.c] || ''; e.textContent = t; e.hidden = !t && e.dataset.c !== 'org'; });
+  document.querySelectorAll('[data-logo]').forEach(e => { e.textContent = ''; if (cfg.logo) { const im = new Image(); im.alt = ''; im.src = cfg.logo; e.appendChild(im); } else e.textContent = e.dataset.logo; });
   document.title = (cfg.org || 'DCLM') + ' Registration System';
   $('progSel').innerHTML = cfg.programs.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('') || '<option value="">No program</option>';
   $('progSel').value = pid; setDateLimits();
@@ -89,6 +90,19 @@ $('progList').onclick = e => { const id = e.target.dataset.edit; if (!id) return
 $('progForm').onsubmit = e => { e.preventDefault(); saveCfg('saveProgram', { id: $('pId').value, name: $('pName').value.trim(), theme: $('pTheme').value.trim(), start: $('pStart').value, end: $('pEnd').value }); };
 $('orgForm').onsubmit = e => { e.preventDefault(); saveCfg('saveOrg', { org: $('cOrg').value.trim() }); };
 $('pClear').onclick = clearProgForm;
+async function logoFromFile(f) {     // shrink to a small image that fits in one sheet cell
+  if (!f.type.startsWith('image/')) throw new Error('Please choose an image file.');
+  const bmp = await createImageBitmap(f);
+  for (const [size, type, qual] of [[256, 'image/png'], [192, 'image/png'], [256, 'image/jpeg', .85], [192, 'image/jpeg', .8], [128, 'image/jpeg', .75]]) {
+    const k = Math.min(1, size / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+    const x = c.getContext('2d'); if (type === 'image/jpeg') { x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); }
+    x.drawImage(bmp, 0, 0, c.width, c.height); const u = c.toDataURL(type, qual); if (u.length <= 46000) return u;
+  }
+  throw new Error('Image is too detailed. Please use a simpler logo.');
+}
+$('logoFile').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { await saveCfg('saveLogo', { logo: await logoFromFile(f) }); } catch (err) { flash('setMsg', err.message, 'error'); } };
+$('logoDel').onclick = () => saveCfg('saveLogo', { logo: '' });
 $('pwForm').onsubmit = async e => {
   e.preventDefault(); $('content').scrollTo(0, 0); const np = $('pwNew').value;
   if (np !== $('pwNew2').value) return flash('setMsg', 'New passwords do not match', 'error');
@@ -155,7 +169,7 @@ async function doLogin() {
     S = { token: j.token, role: j.role, ts: Date.now() }; localStorage.setItem('dclm_s', JSON.stringify(S)); enter();
   } catch (e) {
     console.error('Login failed:', e);
-    flash('authMsg', !API ? 'Server URL not set. Tap "Server settings" below, or put it in config.js.'
+    flash('authMsg', !API ? 'Server URL not set. The administrator must set it in config.js.'
       : e.name === 'SyntaxError' ? 'The server did not return valid data. In Apps Script, deploy as Web App with access set to "Anyone", and use the /exec URL.'
       : e.name === 'AbortError' ? 'The server took too long to respond. Try again.'
       : !navigator.onLine ? 'You are offline. The first login needs a connection.'
@@ -276,11 +290,10 @@ async function adminPost(action, data, form, msg) {
 const calc = () => { $('hT').value = (+$('hM').value || 0) + (+$('hF').value || 0); $('aT').value = (+$('aM').value || 0) + (+$('aF').value || 0); };
 
 // ---------- wiring ----------
-document.querySelectorAll('.rb').forEach(b => b.onclick = () => { document.querySelectorAll('.rb').forEach(x => x.classList.remove('on')); b.classList.add('on'); role = b.dataset.role; $('pw').focus(); });
+$('roleSel').onchange = () => { role = $('roleSel').value; $('pw').focus(); };
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
-$('srv').onclick = () => { const u = prompt('Paste your Apps Script Web App URL (ends in /exec):', API); if (u === null) return; API = u.trim(); localStorage.setItem(API_KEY, API); flash('authMsg', API ? 'Server URL saved. Try logging in.' : 'Server URL cleared.', 'success'); fetchCfg(); };
 $('loginForm').onsubmit = e => { e.preventDefault(); doLogin(); };
-$('eye').onclick = () => { const p = $('pw'); p.type = p.type === 'password' ? 'text' : 'password'; $('eye').style.opacity = p.type === 'text' ? 1 : .6; };
+$('showPw').onchange = e => $('pw').type = e.target.checked ? 'text' : 'password';
 $('logout').onclick = logout;
 $('status').onchange = () => $('invBox').hidden = $('status').value !== 'New Comer';
 $('district').onchange = fillLocations;

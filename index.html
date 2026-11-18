@@ -4,20 +4,19 @@
 <meta name="theme-color" content="#0f172a"><link rel="manifest" href="manifest.json">
 <title>DCLM Registration System</title><link rel="stylesheet" href="style.css">
 </head><body>
-<div id="auth"><div class="login">
-<div class="brand"><div class="logo">✝</div><h1 data-c="org">DCLM</h1><p class="theme" data-c="event"></p><p class="sub" data-c="theme"></p>
-<ul><li>📝 Fast attendee registration</li><li>📶 Works offline, syncs automatically</li><li>📊 Live attendance &amp; altar call reports</li></ul><small data-c="dates"></small></div>
-<form class="panel" id="loginForm" autocomplete="off"><h2>Welcome back</h2><p class="hint">Sign in to continue</p>
-<div class="seg"><button type="button" class="rb on" data-role="register">Registration Officer</button><button type="button" class="rb" data-role="admin">Administrator</button></div>
-<label>Access password<div class="pwrap"><input type="password" id="pw" placeholder="Enter your password" autocomplete="off"><button type="button" id="eye" aria-label="Show password">👁</button></div></label>
-<div id="authMsg"></div><button class="btn" id="loginBtn" type="submit"><span>Sign in</span></button><small class="foot">Authorized personnel only</small><button type="button" id="srv" class="link">⚙ Server settings</button></form></div></div>
+<div id="auth"><form class="login" id="loginForm" autocomplete="off">
+<div class="clogo" data-logo="✝"></div><h1 data-c="org">DCLM</h1><p class="ev" data-c="event"></p><p class="th" data-c="theme"></p><p class="dt" data-c="dates"></p><hr>
+<label>Sign in as<select id="roleSel"><option value="register">Registration Officer</option><option value="admin">Administrator</option></select></label>
+<label>Password<input type="password" id="pw" autocomplete="off"></label>
+<label class="chk"><input type="checkbox" id="showPw"> Show password</label>
+<div id="authMsg"></div><button class="btn" id="loginBtn" type="submit"><span>Login</span></button><small class="foot">Authorized personnel only</small></form></div>
 
 <div id="app" hidden>
-<div id="brand"><h2 data-c="org">DCLM</h2><p><span data-c="event"></span><br><span data-c="dates"></span></p></div>
+<div id="brand"><div class="blogo" data-logo="⛪"></div><h2 data-c="org">DCLM</h2><p><span data-c="event"></span><br><span data-c="dates"></span></p></div>
 <nav id="nav"><a class="tab on" data-tab="dashboard"><i>📊</i>Dashboard</a><a class="tab" data-tab="register"><i>📝</i>Register</a>
 <a class="tab adm" data-tab="districts"><i>🗺️</i>Districts</a><a class="tab adm" data-tab="analytics"><i>📈</i>Analytics</a><a class="tab adm" data-tab="headcount"><i>👥</i>Headcount</a><a class="tab adm" data-tab="settings"><i>⚙️</i>Programs</a></nav>
 <footer id="roleLbl"></footer>
-<main><header><div><b data-c="org">DCLM</b><small data-c="theme"></small></div>
+<main><header><span class="hlogo" data-logo="⛪"></span><div><b data-c="org">DCLM</b><small data-c="theme"></small></div>
 <select id="progSel" aria-label="Retreat program"></select><span id="sync"></span><button class="btn red" id="logout">Logout</button></header>
 <div id="content">
 <section id="dashboard" class="pane on"><h3>Dashboard Overview</h3><div id="dashMsg"></div>
@@ -61,6 +60,7 @@
 <div class="row"><label>Start date *<input type="date" id="pStart" required></label><label>End date *<input type="date" id="pEnd" required></label></div>
 <button class="btn">Save Program</button><button type="button" class="link" id="pClear">Clear form</button></form>
 <h3>Organisation</h3><form id="orgForm"><label>Organisation / Region name<input id="cOrg" maxlength="100"></label><button class="btn">Save</button></form>
+<h3>Church Logo</h3><div class="logoprev" data-logo="No logo yet"></div><label>Upload logo (PNG, JPG or WebP)<input type="file" id="logoFile" accept="image/*"></label><button type="button" class="btn red" id="logoDel">Remove logo</button>
 <h3>Change Password</h3><form id="pwForm" autocomplete="off"><label>Password to change<select id="pwRole"><option value="register">Registration Officer</option><option value="admin">Administrator</option></select></label>
 <label>Your current admin password *<input type="password" id="pwCur" required autocomplete="current-password"></label>
 <label>New password * <small>(min 6 characters)</small><input type="password" id="pwNew" required minlength="6" autocomplete="new-password"></label>
