@@ -50,37 +50,66 @@ function bars(labels, series, stacked) {
 }
 const hbars = items => { if (!items.length) return NONE; const m = Math.max(1, ...items.map(i => i[1])); return `<div class="hb">${items.map(([l, v]) => `<div><span title="${esc(l)}">${esc(l)}</span><div class="bar"><i style="width:${v / m * 100}%"></i></div><b>${v}</b></div>`).join('')}</div>`; };
 
-// ---------- event settings (from the server, cached for offline) ----------
-let cfg = {};
-function applyCfg(c) {
-  cfg = c || {};
-  document.querySelectorAll('[data-c]').forEach(e => { const v = cfg[e.dataset.c] || ''; e.textContent = v; e.hidden = !v && e.dataset.c !== 'org'; });
-  document.title = (cfg.org || 'DCLM') + ' Registration System';
+// ---------- retreat programs (date ranges) + organisation name: from the server, cached for offline ----------
+let cfg = { org: 'DCLM', programs: [] }, pid = localStorage.getItem('dclm_pid') || '';
+const cur = () => cfg.programs.find(p => p.id === pid);
+const fmtD = d => new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const fmtRange = p => p ? `${fmtD(p.start)} – ${fmtD(p.end)}` : '';
+const chk = d => { const p = cur(); if (!p) return 'No retreat program selected. An admin must create one in the Programs tab.'; if (d < p.start || d > p.end) return `Date must be within ${fmtRange(p)}`; };
+function pickDefault() {
+  if (cur()) return;
+  const t = today(), ps = cfg.programs, now = ps.find(x => x.start <= t && t <= x.end), up = ps.filter(x => x.start > t).sort((a, b) => a.start < b.start ? -1 : 1)[0];
+  pid = (now || up || ps[0] || {}).id || '';
 }
-async function fetchCfg() { try { const j = await api('config'); if (j.success) { localStorage.setItem('dclm_cfg', JSON.stringify(j.config)); applyCfg(j.config); } } catch (e) { } }
-function fillCfgForm() { $('cOrg').value = cfg.org || ''; $('cEvent').value = cfg.event || ''; $('cTheme').value = cfg.theme || ''; $('cDates').value = cfg.dates || ''; }
-$('cfgForm').onsubmit = async e => {
-  e.preventDefault();
-  const c = { org: $('cOrg').value.trim() || 'DCLM', event: $('cEvent').value.trim(), theme: $('cTheme').value.trim(), dates: $('cDates').value.trim() };
-  try { const j = await api('saveConfig', c); flash('setMsg', j.message, j.success ? 'success' : 'error'); if (j.success) { localStorage.setItem('dclm_cfg', JSON.stringify(c)); applyCfg(c); } }
-  catch (err) { flash('setMsg', 'Saving settings needs an internet connection.', 'error'); }
-};
-applyCfg(JSON.parse(localStorage.getItem('dclm_cfg') || '{}')); fetchCfg();
+function setDateLimits() {
+  const p = cur(); ['date', 'hDate', 'fDate'].forEach(id => { $(id).min = p?.start || ''; $(id).max = p?.end || ''; });
+  ['date', 'hDate'].forEach(id => { const el = $(id), t = today(); if (p && (!el.value || el.value < p.start || el.value > p.end)) el.value = t < p.start ? p.start : t > p.end ? p.end : t; });
+}
+function applyCfg(c) {
+  if (c && c.programs) cfg = c; pickDefault();
+  const p = cur(), v = { org: cfg.org, event: p?.name || '', theme: p?.theme || '', dates: fmtRange(p) };
+  document.querySelectorAll('[data-c]').forEach(e => { const t = v[e.dataset.c] || ''; e.textContent = t; e.hidden = !t && e.dataset.c !== 'org'; });
+  document.title = (cfg.org || 'DCLM') + ' Registration System';
+  $('progSel').innerHTML = cfg.programs.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('') || '<option value="">No program</option>';
+  $('progSel').value = pid; setDateLimits();
+}
+async function fetchCfg() { try { const j = await api('config'); if (j.success) { localStorage.setItem('dclm_cfg2', JSON.stringify(j.config)); applyCfg(j.config); } } catch (e) { } }
+function renderProgs() {
+  $('progList').innerHTML = cfg.programs.length ? cfg.programs.map(p => `<div class="item"><b>${esc(p.name)}</b>${p.id === pid ? ' <span class="tag">Selected</span>' : ''}<br><small>${esc(fmtRange(p))}</small><small>${esc(p.theme)}</small><br><button class="btn" data-edit="${esc(p.id)}">Edit</button></div>`).join('') : '<div class="alert warning">No retreat program yet. Add one below to start registering.</div>';
+}
+const clearProgForm = () => { $('progForm').reset(); $('pId').value = ''; };
+function fillCfgForm() { $('cOrg').value = cfg.org || ''; renderProgs(); }
+async function saveCfg(action, payload) {
+  try {
+    const j = await api(action, payload); flash('setMsg', j.message, j.success ? 'success' : 'error');
+    if (j.success) { localStorage.setItem('dclm_cfg2', JSON.stringify(j.config)); applyCfg(j.config); fillCfgForm(); if (action === 'saveProgram') clearProgForm(); loadBoot(); }
+  } catch (err) { flash('setMsg', 'Saving needs an internet connection.', 'error'); }
+}
+$('progList').onclick = e => { const id = e.target.dataset.edit; if (!id) return; const p = cfg.programs.find(x => x.id === id); $('pId').value = id; $('pName').value = p.name; $('pTheme').value = p.theme; $('pStart').value = p.start; $('pEnd').value = p.end; $('pName').focus(); };
+$('progForm').onsubmit = e => { e.preventDefault(); saveCfg('saveProgram', { id: $('pId').value, name: $('pName').value.trim(), theme: $('pTheme').value.trim(), start: $('pStart').value, end: $('pEnd').value }); };
+$('orgForm').onsubmit = e => { e.preventDefault(); saveCfg('saveOrg', { org: $('cOrg').value.trim() }); };
+$('pClear').onclick = clearProgForm;
+$('progSel').onchange = () => { pid = $('progSel').value; localStorage.setItem('dclm_pid', pid); hcPage = 1; applyCfg(); loadBoot(); showTab(document.querySelector('.tab.on').dataset.tab); };
+applyCfg(JSON.parse(localStorage.getItem('dclm_cfg2') || 'null')); fetchCfg();
 
 // ---------- API ----------
 async function api(action, data = {}) {
   if (!API) throw new Error('API URL not set');
   const c = new AbortController(), t = setTimeout(() => c.abort(), 30000);
   try {
-    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action, token: S?.token, ...data }), signal: c.signal });
+    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action, token: S?.token, pid, ...data }), signal: c.signal });
     const j = await r.json();
     if (j.code === 401) { logout(); throw new Error('Session expired. Please log in again.'); }
     return j;
   } finally { clearTimeout(t); }
 }
-async function load(key, action, data) {   // network first, fall back to last cached copy
-  try { const j = await api(action, data); if (j.success) await kv.set(key, j); return j; }
-  catch (e) { const c = await kv.get(key); if (c) return { ...c, stale: true }; throw e; }
+async function load(key, action, data) {   // network first, fall back to last cached copy (per program)
+  key = pid + ':' + key;
+  try {
+    const j = await api(action, data);
+    if (!j.success) throw Object.assign(new Error(j.message || 'Request failed'), { server: true });
+    await kv.set(key, j); return j;
+  } catch (e) { if (e.server) throw e; const c = await kv.get(key); if (c) return { ...c, stale: true }; throw e; }
 }
 const flash = (id, msg, type = 'success') => { const el = $(id); el.innerHTML = `<div class="alert ${type}">${esc(msg)}</div>`; setTimeout(() => el.innerHTML = '', 5000); };
 
@@ -100,6 +129,7 @@ async function sync() {
         if (!b.length) break;
         const j = await api(action, { records: b.map(i => i.data) });
         if (!j.success || !j.acked.length) break;
+        if (j.rejected?.length) flash('dashMsg', `${j.rejected.length} record(s) rejected: date outside the program's range`, 'error');
         for (const id of j.acked) await q.del(id);
         if (type === 'reg') dash();
       }
@@ -133,14 +163,14 @@ function enter() {
   const admin = S.role === 'admin';
   $('roleLbl').textContent = admin ? 'Administrator' : 'Registration Officer';
   document.querySelectorAll('.adm').forEach(e => e.style.display = admin ? '' : 'none');
-  $('date').value = $('hDate').value = today();
+  setDateLimits(); fetchCfg();
   showTab('dashboard'); loadBoot(); badge(); sync();
 }
 function showTab(t) {
   if (S?.role !== 'admin' && ['districts', 'analytics', 'headcount', 'settings'].includes(t)) return;
   document.querySelectorAll('.tab').forEach(e => e.classList.toggle('on', e.dataset.tab === t));
   document.querySelectorAll('.pane').forEach(e => e.classList.toggle('on', e.id === t));
-  $('side').classList.remove('open');
+  $('content').scrollTo(0, 0);
   ({ dashboard: dash, analytics: analytics, headcount: hcLoad, districts: renderDistricts, settings: fillCfgForm })[t]?.();
 }
 
@@ -150,12 +180,12 @@ const stale = j => j.stale ? '<div class="alert warning">Offline: showing last s
 
 async function dash() {
   try {
-    const j = await load('stats', 'stats'), pend = (await q.all()).filter(i => i.type === 'reg').length;
+    const j = await load('stats', 'stats'), pend = (await q.all()).filter(i => i.type === 'reg' && i.data.pid === pid).length;
     $('tTotal').textContent = j.total + pend; $('tToday').textContent = j.today; $('tNew').textContent = j.newComers; $('tMem').textContent = j.members;
     $('dashMsg').innerHTML = stale(j);
     $('chCamp').innerHTML = donut(CAMPS.map(c => [c, j.camps[c] || 0])); $('chGender').innerHTML = donut([['Male', j.gender.Male], ['Female', j.gender.Female]]);
     $('recent').innerHTML = j.recent.length ? j.recent.map(r => `<div class="item"><b>${esc(r.name)}</b><br><small>${esc(r.district)}</small><small>${esc(r.status)}</small><small>${esc(r.time)}</small></div>`).join('') : '<div class="alert">No recent registrations</div>';
-  } catch (e) { flash('dashMsg', 'No data yet. Connect once to load.', 'warning'); }
+  } catch (e) { flash('dashMsg', e.server ? e.message : 'No data yet. Connect once to load.', 'warning'); }
 }
 async function loadBoot() {
   try { boot = await load('boot', 'bootstrap'); } catch (e) { return; }
@@ -190,7 +220,7 @@ async function analytics() {
     $('chDaily').innerHTML = bars(j.daily.map(d => d.k), CAMPS.map(k => ({ name: k, data: j.daily.map(d => sum(d.c[k])) })), true);
     $('chCampGender').innerHTML = bars(CAMPS, [{ name: 'Male', data: CAMPS.map(c => (j.camps[c] || [0, 0])[0]) }, { name: 'Female', data: CAMPS.map(c => (j.camps[c] || [0, 0])[1]) }], false);
     $('chDist').innerHTML = hbars(ds.slice(0, 10).map(r => [r[0], r.at(-1)]));
-  } catch (e) { flash('hcMsg', 'Analytics unavailable offline until loaded once.', 'warning'); }
+  } catch (e) { flash('anMsg', e.server ? e.message : 'Analytics unavailable offline until loaded once.', 'warning'); }
 }
 const hcFilters = () => ({ date: $('fDate').value, camp: $('fCamp').value, message: $('fMsg').value, q: $('fQ').value.trim(), page: hcPage, size: 10 });
 async function hcLoad() {
@@ -204,25 +234,27 @@ async function hcLoad() {
     const rows = o => Object.entries(o).map(([k, v]) => [k, v[0], v[1], v[0] + v[1], v[2], v[3], v[2] + v[3], v[4]]);
     const hd = ['Name', 'Male', 'Female', 'Total', 'Altar M', 'Altar F', 'Altar T', 'Records'];
     $('hcCamps').innerHTML = tbl(hd, rows(j.camps)); $('hcMsgs').innerHTML = tbl(hd, rows(j.msgs));
-  } catch (e) { flash('hcMsg', 'Headcount history unavailable offline until loaded once.', 'warning'); }
+  } catch (e) { flash('hcMsg', e.server ? e.message : 'Headcount history unavailable offline until loaded once.', 'warning'); }
 }
 
 // ---------- forms ----------
 async function submitReg(e) {
   e.preventDefault();
   const v = id => $(id).value.trim(), st = v('status');
+  const bad = chk(v('date')); if (bad) return flash('regMsg', bad, 'error');
   if (st === 'New Comer' && !v('invitedBy')) return flash('regMsg', 'Please specify who invited the new comer', 'error');
-  const data = { cid: crypto.randomUUID(), ts: Date.now(), date: v('date'), fullName: v('fullName'), gender: v('gender'), ageGroup: v('ageGroup'), camp: v('camp'), district: v('district'), location: v('location'), status: st, invitedBy: st === 'New Comer' ? v('invitedBy') : '', phone: v('phone') };
+  const data = { cid: crypto.randomUUID(), pid, ts: Date.now(), date: v('date'), fullName: v('fullName'), gender: v('gender'), ageGroup: v('ageGroup'), camp: v('camp'), district: v('district'), location: v('location'), status: st, invitedBy: st === 'New Comer' ? v('invitedBy') : '', phone: v('phone') };
   await q.put({ cid: data.cid, type: 'reg', data });          // always saved locally first
-  $('regForm').reset(); $('date').value = today(); fillLocations(); $('invBox').hidden = true;
+  $('regForm').reset(); setDateLimits(); fillLocations(); $('invBox').hidden = true;
   flash('regMsg', navigator.onLine ? 'Registration saved' : 'Saved offline. Will sync when online.');
   badge(); sync();
 }
 async function submitHc(e) {
   e.preventDefault();
-  const n = id => parseInt($(id).value) || 0, data = { cid: crypto.randomUUID(), ts: Date.now(), date: $('hDate').value, camp: $('hCamp').value, message: $('hMsg').value, maleCount: n('hM'), femaleCount: n('hF'), altarCallMale: n('aM'), altarCallFemale: n('aF'), notes: $('hNotes').value.trim() };
+  const bad = chk($('hDate').value); if (bad) return flash('hcMsg', bad, 'error');
+  const n = id => parseInt($(id).value) || 0, data = { cid: crypto.randomUUID(), pid, ts: Date.now(), date: $('hDate').value, camp: $('hCamp').value, message: $('hMsg').value, maleCount: n('hM'), femaleCount: n('hF'), altarCallMale: n('aM'), altarCallFemale: n('aF'), notes: $('hNotes').value.trim() };
   await q.put({ cid: data.cid, type: 'hc', data });
-  $('hcForm').reset(); $('hDate').value = today(); calc();
+  $('hcForm').reset(); setDateLimits(); calc();
   flash('hcMsg', navigator.onLine ? 'Headcount saved' : 'Saved offline. Will sync when online.'); badge(); await sync(); hcLoad();
 }
 async function adminPost(action, data, form, msg) {
@@ -240,7 +272,7 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => showTab(t.datas
 $('srv').onclick = () => { const u = prompt('Paste your Apps Script Web App URL (ends in /exec):', API); if (u === null) return; API = u.trim(); localStorage.setItem(API_KEY, API); flash('authMsg', API ? 'Server URL saved. Try logging in.' : 'Server URL cleared.', 'success'); fetchCfg(); };
 $('loginForm').onsubmit = e => { e.preventDefault(); doLogin(); };
 $('eye').onclick = () => { const p = $('pw'); p.type = p.type === 'password' ? 'text' : 'password'; $('eye').style.opacity = p.type === 'text' ? 1 : .6; };
-$('scrim').onclick = () => $('side').classList.remove('open'); $('logout').onclick = logout; $('menu').onclick = () => $('side').classList.toggle('open');
+$('logout').onclick = logout;
 $('status').onchange = () => $('invBox').hidden = $('status').value !== 'New Comer';
 $('district').onchange = fillLocations;
 $('regForm').onsubmit = submitReg; $('hcForm').onsubmit = submitHc;

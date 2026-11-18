@@ -13,12 +13,12 @@
 <div id="authMsg"></div><button class="btn" id="loginBtn" type="submit"><span>Sign in</span></button><small class="foot">Authorized personnel only</small><button type="button" id="srv" class="link">⚙ Server settings</button></form></div></div>
 
 <div id="app" hidden>
-<aside id="side"><h2 data-c="org">DCLM</h2><p><span data-c="event"></span><br><span data-c="dates"></span></p>
-<nav><a class="tab on" data-tab="dashboard">📊 Dashboard</a><a class="tab" data-tab="register">📝 Register</a>
-<a class="tab adm" data-tab="districts">🗺️ Districts</a><a class="tab adm" data-tab="analytics">📈 Analytics</a><a class="tab adm" data-tab="headcount">👥 Headcount</a><a class="tab adm" data-tab="settings">⚙️ Settings</a></nav>
-<footer id="roleLbl"></footer></aside><div id="scrim"></div>
-<main><header><button id="menu">☰</button><div><b data-c="org">DCLM</b><small data-c="theme"></small></div>
-<span id="sync"></span><button class="btn red" id="logout">Logout</button></header>
+<div id="brand"><h2 data-c="org">DCLM</h2><p><span data-c="event"></span><br><span data-c="dates"></span></p></div>
+<nav id="nav"><a class="tab on" data-tab="dashboard"><i>📊</i>Dashboard</a><a class="tab" data-tab="register"><i>📝</i>Register</a>
+<a class="tab adm" data-tab="districts"><i>🗺️</i>Districts</a><a class="tab adm" data-tab="analytics"><i>📈</i>Analytics</a><a class="tab adm" data-tab="headcount"><i>👥</i>Headcount</a><a class="tab adm" data-tab="settings"><i>⚙️</i>Programs</a></nav>
+<footer id="roleLbl"></footer>
+<main><header><div><b data-c="org">DCLM</b><small data-c="theme"></small></div>
+<select id="progSel" aria-label="Retreat program"></select><span id="sync"></span><button class="btn red" id="logout">Logout</button></header>
 <div id="content">
 <section id="dashboard" class="pane on"><h3>Dashboard Overview</h3><div id="dashMsg"></div>
 <div class="stats"><div><b id="tTotal">0</b>Total</div><div><b id="tToday">0</b>Today</div><div><b id="tNew">0</b>New Comers</div><div><b id="tMem">0</b>Members</div></div>
@@ -41,7 +41,7 @@
 <form id="locForm" class="row3"><label>District *<input id="newDistrict" required></label><label>Location *<input id="newLocation" required></label><button class="btn">Add</button></form>
 <div id="distList"></div></section>
 
-<section id="analytics" class="pane"><h3>Charts</h3><div class="charts"><div class="card"><h4>Daily registrations by camp</h4><div id="chDaily"></div></div><div class="card"><h4>Male vs Female by camp</h4><div id="chCampGender"></div></div><div class="card wide"><h4>Top 10 districts</h4><div id="chDist"></div></div></div>
+<section id="analytics" class="pane"><h3>Charts</h3><div id="anMsg"></div><div class="charts"><div class="card"><h4>Daily registrations by camp</h4><div id="chDaily"></div></div><div class="card"><h4>Male vs Female by camp</h4><div id="chCampGender"></div></div><div class="card wide"><h4>Top 10 districts</h4><div id="chDist"></div></div></div>
 <h3>Camp Statistics</h3><div class="tw" id="anCamp"></div>
 <h3>Daily Registration Breakdown</h3><div class="tw" id="anDaily"></div><h3>District Distribution</h3><div class="tw" id="anDist"></div></section>
 
@@ -56,8 +56,10 @@
 <h3>History</h3><div class="filters"><input type="date" id="fDate"><select id="fCamp"><option value="">All Camps</option><option>Adult</option><option>Youth</option><option>Campus</option><option>Children</option></select><select id="fMsg"></select><input id="fQ" placeholder="Search…"><button class="btn" id="fClear">Clear</button></div>
 <div class="tw" id="hcTable"></div><div class="pager"><button class="btn" id="prev">Prev</button><span id="pg"></span><button class="btn" id="next">Next</button></div>
 <div class="stats" id="hcStats"></div><h3>By Camp</h3><div class="tw" id="hcCamps"></div><h3>By Message</h3><div class="tw" id="hcMsgs"></div></section>
-<section id="settings" class="pane"><h3>Event Settings</h3><div id="setMsg"></div>
-<form id="cfgForm"><label>Organisation / Region name<input id="cOrg" maxlength="100"></label><label>Event title<input id="cEvent" maxlength="100"></label>
-<label>Theme<input id="cTheme" maxlength="100"></label><label>Dates<input id="cDates" maxlength="100" placeholder="e.g. 24th–28th December"></label><button class="btn">Save Settings</button></form></section>
+<section id="settings" class="pane"><h3>Retreat Programs</h3><div id="setMsg"></div><div id="progList"></div>
+<h3>Add / Edit Program</h3><form id="progForm"><input type="hidden" id="pId"><label>Program name *<input id="pName" required maxlength="100" placeholder="e.g. Global December Retreat 2026"></label><label>Theme<input id="pTheme" maxlength="100"></label>
+<div class="row"><label>Start date *<input type="date" id="pStart" required></label><label>End date *<input type="date" id="pEnd" required></label></div>
+<button class="btn">Save Program</button><button type="button" class="link" id="pClear">Clear form</button></form>
+<h3>Organisation</h3><form id="orgForm"><label>Organisation / Region name<input id="cOrg" maxlength="100"></label><button class="btn">Save</button></form></section>
 </div></main></div>
 <script src="config.js"></script><script src="app.js"></script></body></html>
