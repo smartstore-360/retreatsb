@@ -89,6 +89,15 @@ $('progList').onclick = e => { const id = e.target.dataset.edit; if (!id) return
 $('progForm').onsubmit = e => { e.preventDefault(); saveCfg('saveProgram', { id: $('pId').value, name: $('pName').value.trim(), theme: $('pTheme').value.trim(), start: $('pStart').value, end: $('pEnd').value }); };
 $('orgForm').onsubmit = e => { e.preventDefault(); saveCfg('saveOrg', { org: $('cOrg').value.trim() }); };
 $('pClear').onclick = clearProgForm;
+$('pwForm').onsubmit = async e => {
+  e.preventDefault(); $('content').scrollTo(0, 0); const np = $('pwNew').value;
+  if (np !== $('pwNew2').value) return flash('setMsg', 'New passwords do not match', 'error');
+  try {
+    const j = await api('changePassword', { role: $('pwRole').value, current: $('pwCur').value, password: np });
+    flash('setMsg', j.message, j.success ? 'success' : 'error');
+    if (j.success) { $('pwForm').reset(); if (j.token) { S.token = j.token; localStorage.setItem('dclm_s', JSON.stringify(S)); } }
+  } catch (err) { flash('setMsg', 'Changing a password needs an internet connection.', 'error'); }
+};
 $('progSel').onchange = () => { pid = $('progSel').value; localStorage.setItem('dclm_pid', pid); hcPage = 1; applyCfg(); loadBoot(); showTab(document.querySelector('.tab.on').dataset.tab); };
 applyCfg(JSON.parse(localStorage.getItem('dclm_cfg2') || 'null')); fetchCfg();
 

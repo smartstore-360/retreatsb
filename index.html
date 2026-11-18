@@ -60,6 +60,10 @@
 <h3>Add / Edit Program</h3><form id="progForm"><input type="hidden" id="pId"><label>Program name *<input id="pName" required maxlength="100" placeholder="e.g. Global December Retreat 2026"></label><label>Theme<input id="pTheme" maxlength="100"></label>
 <div class="row"><label>Start date *<input type="date" id="pStart" required></label><label>End date *<input type="date" id="pEnd" required></label></div>
 <button class="btn">Save Program</button><button type="button" class="link" id="pClear">Clear form</button></form>
-<h3>Organisation</h3><form id="orgForm"><label>Organisation / Region name<input id="cOrg" maxlength="100"></label><button class="btn">Save</button></form></section>
+<h3>Organisation</h3><form id="orgForm"><label>Organisation / Region name<input id="cOrg" maxlength="100"></label><button class="btn">Save</button></form>
+<h3>Change Password</h3><form id="pwForm" autocomplete="off"><label>Password to change<select id="pwRole"><option value="register">Registration Officer</option><option value="admin">Administrator</option></select></label>
+<label>Your current admin password *<input type="password" id="pwCur" required autocomplete="current-password"></label>
+<label>New password * <small>(min 6 characters)</small><input type="password" id="pwNew" required minlength="6" autocomplete="new-password"></label>
+<label>Confirm new password *<input type="password" id="pwNew2" required minlength="6" autocomplete="new-password"></label><button class="btn">Change Password</button></form></section>
 </div></main></div>
 <script src="config.js"></script><script src="app.js"></script></body></html>
