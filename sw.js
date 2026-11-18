@@ -1,4 +1,4 @@
-const V = 'dclm-v13', F = ['./', 'index.html', 'app.js', 'config.js', 'style.css', 'manifest.json', 'logo.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
+const V = 'dclm-v14', F = ['./', 'index.html', 'app.js', 'config.js', 'style.css', 'manifest.json', 'logo.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 self.addEventListener('install', e => e.waitUntil(caches.open(V).then(c => c.addAll(F)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== V).map(x => caches.delete(x)))).then(() => clients.claim())));
 // Network-first (so updates always show), cache fallback (so it works offline). API calls are never intercepted.

@@ -81,8 +81,8 @@ async function fetchCfg() { try { const j = await api('config'); if (j.success) 
 function renderProgs() {
   $('progList').innerHTML = cfg.programs.length ? cfg.programs.map(p => `<div class="item"><b>${esc(p.name)}</b>${p.id === pid ? ' <span class="tag">Selected</span>' : ''}<br><small>${esc(fmtRange(p))}</small><small>${esc(p.theme)}</small><br><button class="btn" data-edit="${esc(p.id)}">Edit</button></div>`).join('') : '<div class="alert warning">No retreat program yet. Add one below to start registering.</div>';
 }
-const clearProgForm = () => { $('progForm').reset(); $('pId').value = ''; };
-function fillCfgForm() { $('cOrg').value = cfg.org || ''; renderProgs(); }
+const clearProgForm = () => { $('progForm').reset(); $('pId').value = ''; $('pStart').value = today(); $('pEnd').min = today(); };   // a new program starts today by default
+function fillCfgForm() { $('cOrg').value = cfg.org || ''; renderProgs(); if (!$('pId').value && !$('pName').value) clearProgForm(); }
 async function saveCfg(action, payload) {
   try {
     const j = await api(action, payload); flash('setMsg', j.message, j.success ? 'success' : 'error');
@@ -93,6 +93,7 @@ $('progList').onclick = e => { const id = e.target.dataset.edit; if (!id) return
 $('progForm').onsubmit = e => { e.preventDefault(); saveCfg('saveProgram', { id: $('pId').value, name: $('pName').value.trim(), theme: $('pTheme').value.trim(), start: $('pStart').value, end: $('pEnd').value }); };
 $('orgForm').onsubmit = e => { e.preventDefault(); saveCfg('saveOrg', { org: $('cOrg').value.trim() }); };
 $('pClear').onclick = clearProgForm;
+$('pStart').onchange = () => { $('pEnd').min = $('pStart').value; };
 async function logoFromFile(f) {     // shrink to a small image that fits in one sheet cell
   if (!f.type.startsWith('image/')) throw new Error('Please choose an image file.');
   const bmp = await createImageBitmap(f);
