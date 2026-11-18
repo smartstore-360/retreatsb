@@ -69,7 +69,7 @@ function applyCfg(c) {
   if (c && c.programs) cfg = c; pickDefault();
   const p = cur(), v = { org: cfg.org, event: p?.name || '', theme: p?.theme || '', dates: fmtRange(p) };
   document.querySelectorAll('[data-c]').forEach(e => { const t = v[e.dataset.c] || ''; e.textContent = t; e.hidden = !t && e.dataset.c !== 'org'; });
-  document.querySelectorAll('[data-logo]').forEach(e => { e.textContent = ''; if (cfg.logo) { const im = new Image(); im.alt = ''; im.src = cfg.logo; e.appendChild(im); } else e.textContent = e.dataset.logo; });
+  document.querySelectorAll('[data-logo]').forEach(e => { e.textContent = ''; const im = new Image(); im.alt = ''; im.src = cfg.logo || 'logo.png'; im.onerror = () => { e.textContent = e.dataset.logo; }; e.appendChild(im); });
   document.title = (cfg.org || 'DCLM') + ' Registration System';
   const t = today(), grp = { Current: [], Upcoming: [], Past: [] };
   cfg.programs.forEach(x => (x.end < t ? grp.Past : x.start > t ? grp.Upcoming : grp.Current).push(x));
