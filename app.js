@@ -71,7 +71,10 @@ function applyCfg(c) {
   document.querySelectorAll('[data-c]').forEach(e => { const t = v[e.dataset.c] || ''; e.textContent = t; e.hidden = !t && e.dataset.c !== 'org'; });
   document.querySelectorAll('[data-logo]').forEach(e => { e.textContent = ''; if (cfg.logo) { const im = new Image(); im.alt = ''; im.src = cfg.logo; e.appendChild(im); } else e.textContent = e.dataset.logo; });
   document.title = (cfg.org || 'DCLM') + ' Registration System';
-  $('progSel').innerHTML = cfg.programs.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('') || '<option value="">No program</option>';
+  const t = today(), grp = { Current: [], Upcoming: [], Past: [] };
+  cfg.programs.forEach(x => (x.end < t ? grp.Past : x.start > t ? grp.Upcoming : grp.Current).push(x));
+  $('progSel').innerHTML = cfg.programs.length ? Object.entries(grp).filter(([, a]) => a.length).map(([g, a]) => `<optgroup label="${g === 'Past' ? 'Past programs' : g}">${a.map(x => `<option value="${esc(x.id)}">${esc(x.name)} · ${esc(fmtRange(x))}</option>`).join('')}</optgroup>`).join('') : '<option value="">No program</option>';
+  const past = p && p.end < t; $('pbanner').hidden = !past; $('pbanner').textContent = past ? `📁 Viewing a past program (ended ${fmtD(p.end)}). Use the selector at the top to switch.` : '';
   $('progSel').value = pid; setDateLimits();
 }
 async function fetchCfg() { try { const j = await api('config'); if (j.success) { localStorage.setItem('dclm_cfg2', JSON.stringify(j.config)); applyCfg(j.config); } } catch (e) { } }
@@ -290,10 +293,10 @@ async function adminPost(action, data, form, msg) {
 const calc = () => { $('hT').value = (+$('hM').value || 0) + (+$('hF').value || 0); $('aT').value = (+$('aM').value || 0) + (+$('aF').value || 0); };
 
 // ---------- wiring ----------
-$('roleSel').onchange = () => { role = $('roleSel').value; $('pw').focus(); };
+document.querySelectorAll('input[name=role]').forEach(r => r.onchange = () => { role = r.value; $('pw').focus(); });
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
 $('loginForm').onsubmit = e => { e.preventDefault(); doLogin(); };
-$('showPw').onchange = e => $('pw').type = e.target.checked ? 'text' : 'password';
+$('eye').onclick = () => { const p = $('pw'); p.type = p.type === 'password' ? 'text' : 'password'; $('eye').style.opacity = p.type === 'text' ? 1 : .6; };
 $('logout').onclick = logout;
 $('status').onchange = () => $('invBox').hidden = $('status').value !== 'New Comer';
 $('district').onchange = fillLocations;
