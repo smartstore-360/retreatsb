@@ -4,12 +4,14 @@
 <meta name="theme-color" content="#0f172a"><link rel="manifest" href="manifest.json"><link rel="icon" type="image/png" href="logo.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>DCLM Registration System</title><link rel="stylesheet" href="style.css">
 </head><body>
-<div id="auth"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i>
-<form class="login" id="loginForm" autocomplete="off">
-<div class="clogo" data-logo="✝"></div><h1 data-c="org">DCLM</h1><p class="ev" data-c="event"></p><p class="th" data-c="theme"></p><p class="dt" data-c="dates"></p>
+<div id="auth"><div class="shell">
+<section class="hero"><div class="clogo" data-logo="✝"></div><h1 data-c="org">DCLM</h1><p class="ev" data-c="event"></p><p class="th" data-c="theme"></p><span class="dt" data-c="dates"></span>
+<ul class="perks"><li>Fast attendee registration</li><li>Works offline and syncs automatically</li><li>Live attendance, altar call and baptism reports</li></ul></section>
+<form class="login" id="loginForm" autocomplete="off"><h2>Welcome back</h2><p class="lead">Sign in to your account to continue</p>
 <p class="signas">Sign in as</p><div class="seg"><input type="radio" name="role" id="rReg" value="register" checked><label for="rReg">Reg. Officer</label><input type="radio" name="role" id="rAdm" value="admin"><label for="rAdm">Admin</label></div>
-<div class="field"><span class="ico">🔒</span><input type="password" id="pw" placeholder="Password" aria-label="Password" autocomplete="off"><button type="button" id="eye" aria-label="Show password">👁</button></div>
-<div id="authMsg"></div><button class="btn" id="loginBtn" type="submit"><span>Sign in</span></button><small class="foot">Authorized personnel only</small></form></div>
+<p class="signas">Password</p><div class="field"><span class="ico">🔒</span><input type="password" id="pw" placeholder="Enter your password" aria-label="Password" autocomplete="off"><button type="button" id="eye" aria-label="Show password">👁</button></div>
+<div class="field" id="srvBox" hidden><span class="ico">🔗</span><input id="srvUrl" placeholder="Server URL (https://script.google.com/…/exec)" aria-label="Server URL" autocomplete="off"></div>
+<div id="authMsg"></div><button class="btn" id="loginBtn" type="submit"><span>Sign in</span></button><small class="foot">🔒 Authorized personnel only</small></form></div></div>
 
 <div id="app" hidden>
 <div id="brand"><div class="blogo" data-logo="⛪"></div><h2 data-c="org">DCLM</h2><p><span data-c="event"></span><br><span data-c="dates"></span></p></div>
@@ -52,6 +54,10 @@
 <div class="row3"><label>Male<input type="number" min="0" id="hM" value="0"></label><label>Female<input type="number" min="0" id="hF" value="0"></label><label>Total<input id="hT" value="0" readonly></label></div>
 <div class="row3"><label>Altar Call Male<input type="number" min="0" id="aM" value="0"></label><label>Altar Call Female<input type="number" min="0" id="aF" value="0"></label><label>Altar Total<input id="aT" value="0" readonly></label></div>
 <label>Notes<textarea id="hNotes" rows="2"></textarea></label><button class="btn">Record Headcount</button></form>
+<h3>Baptism of Converts</h3><div id="bpMsg"></div>
+<form id="bpForm"><div class="row3"><label>Date *<input type="date" id="bDate" required></label><label>Male baptized<input type="number" min="0" id="bM" value="0"></label><label>Female baptized<input type="number" min="0" id="bF" value="0"></label></div>
+<div class="row"><label>Total baptized<input id="bT" value="0" readonly></label><label>Notes<input id="bNotes" maxlength="200"></label></div><button class="btn">Record Baptism</button></form>
+<div class="stats" id="bpStats"></div><div class="tw" id="bpTable"></div>
 <h3>History</h3><div class="filters"><input type="date" id="fDate"><select id="fCamp"><option value="">All Camps</option><option>Adult</option><option>Youth</option><option>Campus</option><option>Children</option></select><select id="fMsg"></select><input id="fQ" placeholder="Search…"><button class="btn" id="fClear">Clear</button></div>
 <div class="tw" id="hcTable"></div><div class="pager"><button class="btn" id="prev">Prev</button><span id="pg"></span><button class="btn" id="next">Next</button></div>
 <div class="stats" id="hcStats"></div><h3>By Camp</h3><div class="tw" id="hcCamps"></div><h3>By Message</h3><div class="tw" id="hcMsgs"></div></section>

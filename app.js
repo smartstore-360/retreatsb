@@ -166,6 +166,11 @@ async function sync() {
 // ---------- auth / shell ----------
 async function doLogin() {
   const pw = $('pw').value.trim(); if (!pw) return flash('authMsg', 'Please enter password', 'error');
+  if (!API) {     // only shown when config.js is empty (e.g. it was overwritten by an upload)
+    const u = $('srvUrl').value.trim();
+    if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(u)) { $('srvBox').hidden = false; return flash('authMsg', 'Server URL is not set. Paste your Apps Script /exec URL above, then sign in.', 'error'); }
+    API = u; localStorage.setItem(API_KEY, u);
+  }
   $('loginBtn').disabled = true; $('loginBtn').firstChild.textContent = 'Signing in…';
   try {
     const j = await api('login', { role, password: pw });
@@ -177,7 +182,7 @@ async function doLogin() {
       : e.name === 'SyntaxError' ? 'The server did not return valid data. In Apps Script, deploy as Web App with access set to "Anyone", and use the /exec URL.'
       : e.name === 'AbortError' ? 'The server took too long to respond. Try again.'
       : !navigator.onLine ? 'You are offline. The first login needs a connection.'
-      : 'Could not reach the server. Check the API URL and that the web app is deployed for "Anyone".', 'error');
+      : `Could not reach the server. Check the API URL and that the web app is deployed for "Anyone". (${e.message || e})`, 'error');
   }
   finally { $('loginBtn').disabled = false; $('loginBtn').firstChild.textContent = 'Sign in'; }
 }
