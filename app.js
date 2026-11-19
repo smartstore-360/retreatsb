@@ -62,8 +62,8 @@ function pickDefault() {
   pid = (now || up || ps[0] || {}).id || '';
 }
 function setDateLimits() {
-  const p = cur(); ['date', 'hDate', 'fDate'].forEach(id => { $(id).min = p?.start || ''; $(id).max = p?.end || ''; });
-  ['date', 'hDate'].forEach(id => { const el = $(id), t = today(); if (p && (!el.value || el.value < p.start || el.value > p.end)) el.value = t < p.start ? p.start : t > p.end ? p.end : t; });
+  const p = cur(); ['date', 'hDate', 'fDate', 'bDate'].forEach(id => { $(id).min = p?.start || ''; $(id).max = p?.end || ''; });
+  ['date', 'hDate', 'bDate'].forEach(id => { const el = $(id), t = today(); if (p && (!el.value || el.value < p.start || el.value > p.end)) el.value = t < p.start ? p.start : t > p.end ? p.end : t; });
 }
 function applyCfg(c) {
   if (c && c.programs) cfg = c; pickDefault();
@@ -150,7 +150,7 @@ async function sync() {
   if (syncing || !navigator.onLine || !S) return;
   syncing = true;
   try {
-    for (const [type, action] of [['reg', 'syncRegistrations'], ['hc', 'syncHeadcounts']])
+    for (const [type, action] of [['reg', 'syncRegistrations'], ['hc', 'syncHeadcounts'], ['bp', 'syncBaptisms']])
       for (;;) {
         const b = (await q.all()).filter(i => i.type === type).slice(0, 200);
         if (!b.length) break;
@@ -198,7 +198,7 @@ function showTab(t) {
   document.querySelectorAll('.tab').forEach(e => e.classList.toggle('on', e.dataset.tab === t));
   document.querySelectorAll('.pane').forEach(e => e.classList.toggle('on', e.id === t));
   $('content').scrollTo(0, 0);
-  ({ dashboard: dash, analytics: analytics, headcount: hcLoad, districts: renderDistricts, settings: fillCfgForm })[t]?.();
+  ({ dashboard: dash, analytics: analytics, headcount: () => { hcLoad(); bpLoad(); }, districts: renderDistricts, settings: fillCfgForm })[t]?.();
 }
 
 // ---------- rendering ----------
@@ -302,6 +302,25 @@ $('logout').onclick = logout;
 $('status').onchange = () => $('invBox').hidden = $('status').value !== 'New Comer';
 $('district').onchange = fillLocations;
 $('regForm').onsubmit = submitReg; $('hcForm').onsubmit = submitHc;
+const calcB = () => { $('bT').value = (+$('bM').value || 0) + (+$('bF').value || 0); };
+['bM', 'bF'].forEach(id => $(id).oninput = calcB);
+async function bpLoad() {
+  try {
+    const j = await load('bp', 'baptisms'), t = j.totals;
+    $('bpStats').innerHTML = [['Male Baptized', t.male], ['Female Baptized', t.female], ['Total Baptized', t.total]].map(([l, v]) => `<div><b>${v}</b>${l}</div>`).join('');
+    $('bpTable').innerHTML = stale(j) + tbl(['Date', 'Male', 'Female', 'Total', 'Notes'], j.rows.map(r => [r[0], r[1], r[2], r[1] + r[2], r[3]]), j.rows.length ? ['Grand Total', t.male, t.female, t.total, ''] : null);
+  } catch (e) { flash('bpMsg', e.server ? e.message : 'Baptism records unavailable offline until loaded once.', 'warning'); }
+}
+$('bpForm').onsubmit = async e => {
+  e.preventDefault();
+  const bad = chk($('bDate').value); if (bad) return flash('bpMsg', bad, 'error');
+  const n = id => parseInt($(id).value) || 0, m = n('bM'), f = n('bF');
+  if (m + f < 1) return flash('bpMsg', 'Enter at least one person baptized.', 'error');
+  const data = { cid: crypto.randomUUID(), pid, ts: Date.now(), date: $('bDate').value, male: m, female: f, notes: $('bNotes').value.trim() };
+  await q.put({ cid: data.cid, type: 'bp', data });
+  $('bpForm').reset(); setDateLimits(); calcB();
+  flash('bpMsg', navigator.onLine ? 'Baptism recorded' : 'Saved offline. Will sync when online.'); badge(); await sync(); bpLoad();
+};
 $('locForm').onsubmit = e => { e.preventDefault(); adminPost('addLocation', { district: $('newDistrict').value, location: $('newLocation').value }, 'locForm', 'distMsg'); };
 $('msgForm').onsubmit = e => { e.preventDefault(); adminPost('addMessage', { message: $('newMessage').value, speaker: $('speaker').value }, 'msgForm', 'hcMsg'); };
 ['hM', 'hF', 'aM', 'aF'].forEach(id => $(id).oninput = calc);
