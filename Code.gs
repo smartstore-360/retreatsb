@@ -14,7 +14,7 @@ const H = {
 const ROUTES = {
   bootstrap: ['r', bootstrap], stats: ['r', stats], syncRegistrations: ['r', syncReg],
   addLocation: ['a', addLocation], addMessage: ['a', addMessage], analytics: ['a', analytics],
-  headcounts: ['a', headcounts], syncHeadcounts: ['a', syncHC], changePassword: ['a', changePassword], saveLogo: ['a', saveLogo], baptisms: ['a', baptisms], syncBaptisms: ['a', syncBP], saveOrg: ['a', saveOrg], saveProgram: ['a', saveProgram]
+  headcounts: ['a', headcounts], syncHeadcounts: ['a', syncHC], changePassword: ['a', changePassword], saveLogo: ['a', saveLogo], baptisms: ['a', baptisms], insights: ['a', insights], exportData: ['a', exportData], syncBaptisms: ['a', syncBP], saveOrg: ['a', saveOrg], saveProgram: ['a', saveProgram]
 };
 
 function setup() {
@@ -288,4 +288,44 @@ function baptisms(d) {
   });
   rows.sort((a, b) => a[0] < b[0] ? 1 : -1);
   return { success: true, totals: t, rows: rows.slice(0, 200) };
+}
+
+// ---------- insights: outreach funnel, altar-call rate per message, comparison with the previous program ----------
+function insights(d) {
+  const p = prog(d), prev = getConfig().config.programs.filter(x => x.start < p.start).sort((a, b) => a.start < b.start ? 1 : -1)[0] || null;
+  return memo('ins:' + p.id, 120, () => {
+    const main = col('Main', 2, 8), hc = col('Headcount', 1, 9), bp = col('Baptisms', 1, 5);
+    const M = pr => {
+      const m = { registered: 0, newComers: 0, attendance: 0, altar: 0, baptized: 0 };
+      main.forEach(r => { if (inR(pr, ymd(r[0]))) { m.registered++; if (r[7] === 'New Comer') m.newComers++; } });
+      hc.forEach(r => { if (r[2] && r[3] && inR(pr, ymd(r[1]))) { m.attendance += (+r[4] || 0) + (+r[5] || 0); m.altar += (+r[6] || 0) + (+r[7] || 0); } });
+      bp.forEach(r => { if (inR(pr, ymd(r[1]))) m.baptized += (+r[2] || 0) + (+r[3] || 0); });
+      return m;
+    };
+    const msgs = {};
+    hc.forEach(r => {
+      if (!r[2] || !r[3] || !inR(p, ymd(r[1]))) return;
+      const t = msgs[r[3]] = msgs[r[3]] || [0, 0]; t[0] += (+r[4] || 0) + (+r[5] || 0); t[1] += (+r[6] || 0) + (+r[7] || 0);
+    });
+    return { success: true, cur: M(p), prev: prev ? M(prev) : null, prevName: prev ? prev.name : '',
+      messages: Object.keys(msgs).map(k => ({ name: k, attendance: msgs[k][0], altar: msgs[k][1] })) };
+  });
+}
+
+// ---------- export (paged, so large programs do not hit response limits) ----------
+function exportData(d) {
+  const p = prog(d), off = +d.offset || 0, LIM = 20000, ts = v => v instanceof Date ? Utilities.formatDate(v, TZ, 'yyyy-MM-dd HH:mm') : String(v || '');
+  let name, width, header, map;
+  if (d.kind === 'registrations') {
+    name = 'Main'; width = 11; header = ['Date', 'Full Name', 'Gender', 'Age Group', 'Camp', 'District', 'Location', 'Status', 'Invited By', 'Phone', 'Registered At'];
+    map = r => [ymd(r[1]), r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10] ? '="' + String(r[10]).replace(/"/g, '') + '"' : '', ts(r[0])];   // ="..." keeps the leading 0 in Excel
+  } else if (d.kind === 'headcount') {
+    name = 'Headcount'; width = 9; header = ['Date', 'Camp', 'Message', 'Male', 'Female', 'Total', 'Altar Call Male', 'Altar Call Female', 'Altar Call Total', 'Notes'];
+    map = r => [ymd(r[1]), r[2], r[3], +r[4] || 0, +r[5] || 0, (+r[4] || 0) + (+r[5] || 0), +r[6] || 0, +r[7] || 0, (+r[6] || 0) + (+r[7] || 0), r[8]];
+  } else if (d.kind === 'baptisms') {
+    name = 'Baptisms'; width = 5; header = ['Date', 'Male', 'Female', 'Total', 'Notes'];
+    map = r => [ymd(r[1]), +r[2] || 0, +r[3] || 0, (+r[2] || 0) + (+r[3] || 0), r[4]];
+  } else return { success: false, message: 'Unknown export type.' };
+  const out = []; col(name, 1, width).forEach(r => { if (inR(p, ymd(r[1]))) out.push(map(r)); });
+  return { success: true, header, total: out.length, rows: out.slice(off, off + LIM), next: off + LIM < out.length ? off + LIM : null };
 }

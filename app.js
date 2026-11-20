@@ -203,7 +203,7 @@ function showTab(t) {
   document.querySelectorAll('.tab').forEach(e => e.classList.toggle('on', e.dataset.tab === t));
   document.querySelectorAll('.pane').forEach(e => e.classList.toggle('on', e.id === t));
   $('content').scrollTo(0, 0);
-  ({ dashboard: dash, analytics: analytics, headcount: () => { hcLoad(); bpLoad(); }, districts: renderDistricts, settings: fillCfgForm })[t]?.();
+  ({ dashboard: dash, analytics: () => { analytics(); insLoad(); }, headcount: () => { hcLoad(); bpLoad(); }, districts: renderDistricts, settings: fillCfgForm })[t]?.();
 }
 
 // ---------- rendering ----------
@@ -309,6 +309,35 @@ $('logout').onclick = logout;
 $('status').onchange = () => $('invBox').hidden = $('status').value !== 'New Comer';
 $('district').onchange = fillLocations;
 $('regForm').onsubmit = submitReg; $('hcForm').onsubmit = submitHc;
+// ---------- insights: funnel, altar-call rate per message, comparison with the previous program ----------
+const METRICS = [['registered', 'Registrations'], ['newComers', 'New comers'], ['attendance', 'Attendance (sum of headcounts)'], ['altar', 'Altar calls'], ['baptized', 'Baptized']];
+function funnel(st) {
+  const top = Math.max(1, ...st.map(s => s[1]));
+  return `<div>${st.map(([l, v], i) => `<div class="fs"><div class="fb" style="width:${Math.min(100, Math.max(8, v / top * 100))}%;background:${COL[i % 5]}"><b>${v}</b></div><span>${esc(l)}${i ? ` · ${st[i - 1][1] ? Math.round(v / st[i - 1][1] * 100) : 0}% of ${esc(st[i - 1][0])}` : ''}</span></div>`).join('')}</div>`;
+}
+async function insLoad() {
+  try {
+    const j = await load('ins', 'insights'), c = j.cur, rate = m => m.attendance ? m.altar / m.attendance * 100 : -1;
+    $('insFunnel').innerHTML = stale(j) + funnel([['Registered', c.registered], ['Altar calls', c.altar], ['Baptized', c.baptized]]);
+    $('insMsgs').innerHTML = j.messages.length ? tbl(['Message', 'Attendance', 'Altar calls', 'Rate'], j.messages.slice().sort((a, b) => rate(b) - rate(a)).map(m => [m.name, m.attendance, m.altar, m.attendance ? rate(m).toFixed(1) + '%' : '–'])) : NONE;
+    $('insCmp').innerHTML = !j.prev ? '<div class="alert">No earlier program to compare with yet.</div>'
+      : '<div class="tw">' + tbl(['Metric', j.prevName, cur()?.name || 'This program', 'Change'], METRICS.map(([k, l]) => { const a = j.prev[k], b = c[k]; return [l, a, b, a ? `${b >= a ? '▲' : '▼'} ${Math.abs(Math.round((b - a) / a * 100))}%` : b ? 'new' : '–']; })) + '</div>';
+  } catch (e) { flash('anMsg', e.server ? e.message : 'Insights unavailable offline until loaded once.', 'warning'); }
+}
+
+// ---------- export to CSV (opens in Excel) ----------
+const csv = rows => rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+async function exportCsv(kind) {
+  const p = cur(); if (!p) return flash('exMsg', 'Select a program first', 'error');
+  try {
+    let off = 0, header = [], rows = [];
+    for (;;) { const j = await api('exportData', { kind, offset: off }); if (!j.success) throw new Error(j.message); header = j.header; rows.push(...j.rows); if (j.next == null) break; off = j.next; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv([header, ...rows])], { type: 'text/csv;charset=utf-8' }));
+    a.download = `${p.name.replace(/[^\w-]+/g, '_')}-${kind}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    flash('exMsg', `${rows.length} row(s) exported`);
+  } catch (e) { flash('exMsg', navigator.onLine ? 'Export failed: ' + e.message : 'Exporting needs an internet connection.', 'error'); }
+}
+document.querySelectorAll('[data-exp]').forEach(b => b.onclick = async () => { b.disabled = true; await exportCsv(b.dataset.exp); b.disabled = false; });
 const calcB = () => { $('bT').value = (+$('bM').value || 0) + (+$('bF').value || 0); };
 ['bM', 'bF'].forEach(id => $(id).oninput = calcB);
 async function bpLoad() {
