@@ -247,14 +247,15 @@ const add = (o, c, g) => (o[c] = o[c] || [0, 0])[g]++;
 function analytics(req) {
   const p = prog(req);
   return memo('analytics:' + p.id, 120, () => {
-    const camps = {}, daily = {}, dist = {};
+    const camps = {}, daily = {}, dist = {}, ages = {};
     col('Main', 2, 7).forEach(r => {
       const c = r[4], d = ymd(r[0]); if (!CAMPS.includes(c) || !inR(p, d)) return;
       const g = r[2] === 'Male' ? 0 : 1, ds = String(r[5]).trim();
       add(camps, c, g); add(daily[d] = daily[d] || {}, c, g);
+      const ag = String(r[3]).trim(); if (ag) add(ages, ag, g);
       if (ds) add(dist[ds] = dist[ds] || {}, c, g);
     });
-    return { success: true, camps,
+    return { success: true, camps, ages,
       daily: Object.keys(daily).sort().map(k => ({ k, c: daily[k] })),
       districts: Object.keys(dist).map(k => ({ k, c: dist[k] })) };
   });
