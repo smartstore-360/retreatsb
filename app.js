@@ -278,8 +278,10 @@ async function submitReg(e) {
   const bad = chk(v('date')); if (bad) return flash('regMsg', bad, 'error');
   if (st === 'New Comer' && !v('invitedBy')) return flash('regMsg', 'Please specify who invited the new comer', 'error');
   const data = { cid: crypto.randomUUID(), pid, ts: Date.now(), date: v('date'), fullName: v('fullName'), gender: v('gender'), ageGroup: v('ageGroup'), camp: v('camp'), district: v('district'), location: v('location'), status: st, invitedBy: st === 'New Comer' ? v('invitedBy') : '', phone: v('phone') };
+  $('fullName').focus();   // focus synchronously, inside the tap/submit gesture: mobile browsers ignore focus() after an await
   await q.put({ cid: data.cid, type: 'reg', data });          // always saved locally first
   $('regForm').reset(); setDateLimits(); fillLocations(); $('invBox').hidden = true;
+  $('fullName').focus();
   flash('regMsg', navigator.onLine ? 'Registration saved' : 'Saved offline. Will sync when online.');
   badge(); sync();
 }
