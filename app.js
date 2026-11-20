@@ -252,6 +252,8 @@ async function analytics() {
     $('chDaily').innerHTML = bars(j.daily.map(d => d.k), CAMPS.map(k => ({ name: k, data: j.daily.map(d => sum(d.c[k])) })), true);
     $('chCampGender').innerHTML = bars(CAMPS, [{ name: 'Male', data: CAMPS.map(c => (j.camps[c] || [0, 0])[0]) }, { name: 'Female', data: CAMPS.map(c => (j.camps[c] || [0, 0])[1]) }], false);
     $('chDist').innerHTML = hbars(ds.slice(0, 10).map(r => [r[0], r.at(-1)]));
+    const AGES = ['3–5', '6–9', '10–12', '13–19', '20–29', '30–39', '40–49', '50–59', '60+'], ag = j.ages || {}, labs = [...AGES, ...Object.keys(ag).filter(k => !AGES.includes(k))];
+    $('chAge').innerHTML = labs.some(a => ag[a]) ? bars(labs, [{ name: 'Male', data: labs.map(a => (ag[a] || [0, 0])[0]) }, { name: 'Female', data: labs.map(a => (ag[a] || [0, 0])[1]) }], false) : NONE;
   } catch (e) { flash('anMsg', e.server ? e.message : 'Analytics unavailable offline until loaded once.', 'warning'); }
 }
 const hcFilters = () => ({ date: $('fDate').value, camp: $('fCamp').value, message: $('fMsg').value, q: $('fQ').value.trim(), page: hcPage, size: 10 });
